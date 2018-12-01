@@ -1,0 +1,5 @@
+app-debug/
+venv/
+*.pyc
+.idea/
+.DS_Store

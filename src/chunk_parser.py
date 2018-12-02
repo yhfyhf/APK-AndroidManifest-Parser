@@ -1,50 +1,94 @@
-from enum import Enum
-from typing import Tuple
+from abc import abstractmethod
 
 from file_reader import FileReader
 
 
-class ChunkType(Enum):
-    RES_NULL_TYPE = 0x0000
-    RES_STRING_POOL_TYPE = 0x0001
-    RES_TABLE_TYPE = 0x0002
-    RES_XML_TYPE = 0x0003
-
-    # Chunk types in RES_XML_TYPE
-    RES_XML_FIRST_CHUNK_TYPE = 0x0100
-    RES_XML_START_NAMESPACE_TYPE = 0x0100
-    RES_XML_END_NAMESPACE_TYPE = 0x0101
-    RES_XML_START_ELEMENT_TYPE = 0x0102
-    RES_XML_END_ELEMENT_TYPE = 0x0103
-    RES_XML_CDATA_TYPE = 0x0104
-    RES_XML_LAST_CHUNK_TYPE = 0x017f
-    RES_XML_RESOURCE_MAP_TYPE = 0x0180
-
-    # types in RES_TABLE_TYPE
-    RES_TABLE_PACKAGE_TYPE = 0x0200
-    RES_TABLE_TYPE_TYPE = 0x0201
-    RES_TABLE_TYPE_SPEC_TYPE = 0x0202
-
-
-class ChunkReader(object):
-
-    def __init__(self, path):
-        self._file_reader = FileReader(path)
-
-    def read_chunk_metadata(self) -> Tuple[int, int, int]:
-        """
+class AbstractChunkReader(object):
+    """
+    Chunk
         Chunk Header
             - chunk type: 2 bytes
             - chunk header size: 2 bytes
-            - chunk size: (chunk header size - 4) bytes
+            - chunk size: 4 bytes
+            - ...
+        Chunk Body
+            ...
+    """
+
+    def __init__(self, file_reader):
+        self.file_reader = file_reader
+        self.header_size = self.file_reader.read(2)
+        self.chunk_size = self.file_reader.read(4)
+
+    def read_chunk_header(self):
+        raise NotImplementedError
+
+    def __str__(self):
+        raise NotImplementedError
+
+
+class XMLChunkReader(AbstractChunkReader):
+
+    def __init__(self, file_reader):
+        super().__init__(file_reader)
+
+    @abstractmethod
+    def read_chunk_header(self):
         """
-        chunk_type = self._file_reader.read(2)
-        header_size = self._file_reader.read(2)
-        remaining_header_size = header_size - 4
-        chunk_size = self._file_reader.read(remaining_header_size)
-        return chunk_type, header_size, chunk_size
+        Chunk Header: 8 bytes
+            - chunk type: 2 bytes
+            - chunk header size: 2 bytes
+            - chunk size: 4 bytes
+        """
+        if self.header_size != 8:
+            raise Exception("XML Chunk size is " + str(self.header_size) + " instead of 8")
+
+    def __str__(self):
+        return """Chunk type: XML Chunk Reader
+            Chunk header size: %s (%d)
+            Chunk size: %s (%d)
+        """ % (hex(self.header_size), self.header_size, hex(self.chunk_size), self.chunk_size)
 
 
-if __name__ == "__main__":
-    chunk_reader = ChunkReader("extracted/AndroidManifest.xml")
-    print(chunk_reader.read_chunk_metadata())
+class StringPoolChunkReader(AbstractChunkReader):
+
+    def __init__(self, file_reader: FileReader):
+        super().__init__(file_reader)
+        self.string_count = None
+        self.style_count = None
+        self.read_chunk_header()
+
+    @abstractmethod
+    def read_chunk_header(self):
+        """
+        StringPoolChunk Header: 28 bytes
+            - chunk type: 2 bytes
+            - chunk header size: 2 bytes
+            - chunk size: 4 bytes
+            - string count: 4 bytes
+            - style count: 4 bytes
+            - flag: 4 bytes.
+                enum {
+                    SORTED_FLAG = 1<<0, If set, the string index is sorted by the string values (based on strcmp16()).
+                    UTF8_FLAG = 1<<8, String pool is encoded in UTF-8
+                }
+            - strings start: 4 bytes (Index of the string pool from the chunk header)
+            - styles start: 4 bytes (Index of the styles pool from the chunk header)
+            - list of 4 bytes, of length string count. Each means index of the string from the string pool
+            - list of 4 bytes, of length style count. Each means index of the style from the style pool. If style count is 0, this doesn't exist.
+            - string pool (the actual strings, each character takes 2 bytes):
+                string length: 2 bytes
+                actual string: string length * 2 bytes
+                0x0000: 2 bytes (end of each string)
+        """
+        self.string_count = self.file_reader.read(4)
+        self.style_count = self.file_reader.read(4)
+
+    def __str__(self):
+        return """Chunk type: String Pool Chunk Reader
+            Chunk header size: %s (%d)
+            Chunk size: %s (%d)
+            String count: %s (%d)
+            Style count: %s (%d)
+        """ % (hex(self.header_size), self.header_size, hex(self.chunk_size), self.chunk_size, hex(self.string_count),
+               self.string_count, hex(self.style_count), self.style_count)

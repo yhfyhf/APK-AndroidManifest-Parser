@@ -3,6 +3,7 @@ from enum import Enum
 from file_reader import FileReader
 from chunk_parsers.string_pool_chunk_parser import StringPoolChunkParser
 from chunk_parsers.xml_chunk_parser import XMLChunkParser
+from chunk_parsers.resource_map_chunk_parser import ResourceMapChunkParser
 
 
 class ChunkType(Enum):
@@ -51,12 +52,21 @@ class ManifestReader(object):
 
 if __name__ == "__main__":
     manifest_reader = ManifestReader("extracted/AndroidManifest.xml")
-    chunk_type = manifest_reader.get_chunk_type()
-    if chunk_type == ChunkType.RES_XML_TYPE.value:
-        xml_chunk_reader = XMLChunkParser(manifest_reader.file_reader)
-        print(xml_chunk_reader)
 
     chunk_type = manifest_reader.get_chunk_type()
-    if chunk_type == ChunkType.RES_STRING_POOL_TYPE.value:
-        string_pool_chunk_reader = StringPoolChunkParser(manifest_reader.file_reader)
-        print(string_pool_chunk_reader)
+    if chunk_type != ChunkType.RES_XML_TYPE.value:
+        raise Exception("First chunk should be XML chunk")
+    xml_chunk_parser = XMLChunkParser(manifest_reader.file_reader)
+    print(xml_chunk_parser)
+
+    chunk_type = manifest_reader.get_chunk_type()
+    if chunk_type != ChunkType.RES_STRING_POOL_TYPE.value:
+        raise Exception("Second chunk should be string pool chunk")
+    string_pool_chunk_parser = StringPoolChunkParser(manifest_reader.file_reader)
+    print(string_pool_chunk_parser)
+
+    chunk_type = manifest_reader.get_chunk_type()
+    if chunk_type != ChunkType.RES_XML_RESOURCE_MAP_TYPE.value:
+        raise Exception("Third chunk should be resource map chunk")
+    resource_map_chunk_parser = ResourceMapChunkParser(manifest_reader.file_reader)
+    print(resource_map_chunk_parser)

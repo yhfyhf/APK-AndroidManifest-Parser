@@ -31,7 +31,7 @@ class ManifestReader(object):
     """
     AndroidManifest.xml
         XML Chunk
-        String Chunk
+        String Pool Chunk
     """
 
     def __init__(self, path):
@@ -44,7 +44,7 @@ class ManifestReader(object):
             - chunk header size: 2 bytes
             - chunk size: 4 bytes
         """
-        return self.file_reader.read(2)
+        return self.file_reader.read_short()
 
 
 if __name__ == "__main__":

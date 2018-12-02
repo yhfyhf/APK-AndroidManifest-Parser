@@ -18,8 +18,10 @@ class AbstractChunkParser(object):
         self.chunk_offset = file_reader.tell() - 2  # chunk type is already read
         self.header_size = self.file_reader.read_short()
         self.chunk_size = self.file_reader.read_int()
+        self.read_header()
+        self.read_body()
 
-    def read_chunk_header(self):
+    def read_header(self):
         raise NotImplementedError
 
     def read_body(self):

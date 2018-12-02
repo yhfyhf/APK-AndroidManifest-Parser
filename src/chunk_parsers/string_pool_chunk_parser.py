@@ -30,30 +30,15 @@ class StringPoolChunkParser(AbstractChunkParser):
 
     def __init__(self, file_reader: FileReader):
         super().__init__(file_reader)
-        self.string_count = None
-        self.style_count = None
-        self.flag = None
-        self.strings_start = None
-        self.styles_start = None
-        self.strings = None
-        self.read_chunk_header()
-        self.read_body()
+        self.chunk_type = "String Pool Chunk"
 
     @abstractmethod
-    def read_chunk_header(self):
+    def read_header(self):
         self.string_count = self.file_reader.read_int()
         self.style_count = self.file_reader.read_int()
         self.flag = self.file_reader.read_int()
         self.strings_start = self.file_reader.read_int()
         self.styles_start = self.file_reader.read_int()
-
-    def __str__(self):
-        return super(StringPoolChunkParser, self).__str__() +\
-        """
-            String count: %s (%d)
-            Style count: %s (%d)
-            Strings: %s
-        """ % (hex(self.string_count), self.string_count, hex(self.style_count), self.style_count, self.strings)
 
     @abstractmethod
     def read_body(self):
@@ -73,3 +58,11 @@ class StringPoolChunkParser(AbstractChunkParser):
         if self.file_reader.read_char() != '\x00':
             raise Exception("end of string is not \x00")
         return string
+
+    def __str__(self):
+        return super(StringPoolChunkParser, self).__str__() +\
+        """
+            String count: %s (%d)
+            Style count: %s (%d)
+            Strings: %s
+        """ % (hex(self.string_count), self.string_count, hex(self.style_count), self.style_count, self.strings)

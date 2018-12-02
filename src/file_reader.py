@@ -35,6 +35,6 @@ class FileReader(object):
 
 if __name__ == "__main__":
     reader = FileReader("extracted/AndroidManifest.xml")
-    print(reader.read(2))
-    print(reader.read(2))
+    print(reader.read_short())
+    print(reader.read_short(2))
     print(reader.read_as_hex(4))

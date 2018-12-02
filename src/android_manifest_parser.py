@@ -1,7 +1,8 @@
 from enum import Enum
 
 from file_reader import FileReader
-from chunk_parser import XMLChunkReader, StringPoolChunkReader
+from chunk_parsers.string_pool_chunk_parser import StringPoolChunkParser
+from chunk_parsers.xml_chunk_parser import XMLChunkParser
 
 
 class ChunkType(Enum):
@@ -32,6 +33,7 @@ class ManifestReader(object):
     AndroidManifest.xml
         XML Chunk
         String Pool Chunk
+        Resource Map Chunk
     """
 
     def __init__(self, path):
@@ -51,10 +53,10 @@ if __name__ == "__main__":
     manifest_reader = ManifestReader("extracted/AndroidManifest.xml")
     chunk_type = manifest_reader.get_chunk_type()
     if chunk_type == ChunkType.RES_XML_TYPE.value:
-        xml_chunk_reader = XMLChunkReader(manifest_reader.file_reader)
+        xml_chunk_reader = XMLChunkParser(manifest_reader.file_reader)
         print(xml_chunk_reader)
 
     chunk_type = manifest_reader.get_chunk_type()
     if chunk_type == ChunkType.RES_STRING_POOL_TYPE.value:
-        string_pool_chunk_reader = StringPoolChunkReader(manifest_reader.file_reader)
+        string_pool_chunk_reader = StringPoolChunkParser(manifest_reader.file_reader)
         print(string_pool_chunk_reader)

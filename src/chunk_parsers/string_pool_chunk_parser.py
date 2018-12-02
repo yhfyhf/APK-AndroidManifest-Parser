@@ -1,66 +1,10 @@
 from abc import abstractmethod
 
+from chunk_parsers.abstract_chunk_parser import AbstractChunkParser
 from file_reader import FileReader
 
 
-class AbstractChunkReader(object):
-    """
-    Chunk Header
-        - chunk type: 2 bytes
-        - chunk header size: 2 bytes
-        - chunk size: 4 bytes
-        - ...
-    Chunk Body
-        ...
-    """
-
-    def __init__(self, file_reader: FileReader):
-        self.file_reader = file_reader
-        self.chunk_offset = file_reader.tell() - 2 # chunk type is already read
-        self.header_size = self.file_reader.read_short()
-        self.chunk_size = self.file_reader.read_int()
-
-    def read_chunk_header(self):
-        raise NotImplementedError
-
-    def __str__(self):
-        raise NotImplementedError
-
-    def read_body(self):
-        raise NotImplementedError
-
-
-class XMLChunkReader(AbstractChunkReader):
-    """
-    Header: 8 bytes
-        - chunk type: 2 bytes
-        - chunk header size: 2 bytes
-        - chunk size: 4 bytes
-    """
-
-    def __init__(self, file_reader: FileReader):
-        super().__init__(file_reader)
-        self.read_chunk_header()
-        self.read_body()
-
-    @abstractmethod
-    def read_chunk_header(self):
-        if self.header_size != 8:
-            raise Exception("XML Chunk size is " + str(self.header_size) + " instead of 8")
-
-    def __str__(self):
-        return """Chunk type: XML Chunk
-            Chunk header size: %s (%d)
-            Chunk size: %s (%d)
-        """ % (hex(self.header_size), self.header_size, hex(self.chunk_size), self.chunk_size)
-
-    @abstractmethod
-    def read_body(self):
-        """ XML chunk has nothing but just the header. """
-        pass
-
-
-class StringPoolChunkReader(AbstractChunkReader):
+class StringPoolChunkParser(AbstractChunkParser):
     """
     Header: 28 bytes
         - chunk type: 2 bytes
@@ -104,14 +48,12 @@ class StringPoolChunkReader(AbstractChunkReader):
         self.styles_start = self.file_reader.read_int()
 
     def __str__(self):
-        return """Chunk type: String Pool Chunk
-            Chunk header size: %s (%d)
-            Chunk size: %s (%d)
+        return super(StringPoolChunkParser, self).__str__() +\
+        """
             String count: %s (%d)
             Style count: %s (%d)
             Strings: %s
-        """ % (hex(self.header_size), self.header_size, hex(self.chunk_size), self.chunk_size, hex(self.string_count),
-               self.string_count, hex(self.style_count), self.style_count, self.strings)
+        """ % (hex(self.string_count), self.string_count, hex(self.style_count), self.style_count, self.strings)
 
     @abstractmethod
     def read_body(self):
